@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Roads - Smart City Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2 class="mb-0"><i class="bi bi-sign-stop-fill text-primary me-2"></i>Roads Management</h2>
+        <a href="{% url 'road-create' %}" class="btn btn-primary shadow-sm"><i class="bi bi-plus-lg me-1"></i> Add Road</a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 py-3">Name</th>
+                        <th class="py-3">Zone</th>
+                        <th class="py-3">Speed Limit</th>
+                        <th class="py-3">Direction</th>
+                        <th class="py-3">Status</th>
+                        <th class="text-end pe-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for road in roads %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ road.name }}</td>
+                        <td>{{ road.zone }}</td>
+                        <td>{{ road.speed_limit }} km/h</td>
+                        <td>
+                            <span class="badge bg-secondary">{{ road.get_direction_display }}</span>
+                        </td>
+                        <td>
+                            {% if road.status == 'OPEN' %}
+                                <span class="badge bg-success">Open</span>
+                            {% elif road.status == 'CLOSED' %}
+                                <span class="badge bg-danger">Closed</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">{{ road.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'road-detail' road.pk %}" class="btn btn-sm btn-light border" title="View"><i class="bi bi-eye text-primary"></i></a>
+                            <a href="{% url 'road-update' road.pk %}" class="btn btn-sm btn-light border mx-1" title="Edit"><i class="bi bi-pencil text-warning"></i></a>
+                            <a href="{% url 'road-delete' road.pk %}" class="btn btn-sm btn-light border" title="Delete"><i class="bi bi-trash text-danger"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-signpost-2 fs-1 d-block mb-3"></i>
+                            <h5 class="fw-normal">No roads found in the system.</h5>
+                            <p class="mb-0">Click the 'Add Road' button above to register a new one.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

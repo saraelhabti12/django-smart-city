@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart City Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="mb-3">Smart City Overview</h2>
+    </div>
+</div>
+
+<!-- Live Counters -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4 col-sm-6">
+        <div class="card text-white bg-primary h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <h5 class="card-title">Total Vehicles</h5>
+                <p class="card-text display-4">{{ total_vehicles }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="card text-white bg-danger h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <h5 class="card-title">Active Incidents</h5>
+                <p class="card-text display-4">{{ active_incidents }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="card text-white bg-success h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <h5 class="card-title">Total Roads</h5>
+                <p class="card-text display-4">{{ total_roads }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-sm-6">
+        <div class="card text-dark bg-warning h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <h5 class="card-title">Busy Parkings (>80% full)</h5>
+                <p class="card-text display-4">{{ busy_parkings }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-sm-12">
+        <div class="card text-white bg-info h-100 shadow-sm">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+                <h5 class="card-title">Ongoing Priority Missions</h5>
+                <p class="card-text display-4">{{ priority_missions }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Vehicles by Type</h5>
+            </div>
+            <div class="card-body d-flex justify-content-center">
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="vehiclesPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart-fill text-danger me-2"></i>Incidents by Severity</h5>
+            </div>
+            <div class="card-body d-flex justify-content-center">
+                <div style="height: 300px; width: 100%;">
+                    <canvas id="incidentsBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tables and Progress Bars Row -->
+<div class="row g-4">
+    <!-- Parking Occupancy Progress Bars -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-p-square-fill text-success me-2"></i>Parking Occupancy</h5>
+            </div>
+            <div class="card-body">
+                {% for parking in parkings %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-semibold">{{ parking.name }}</span>
+                        <span class="text-muted">{{ parking.occupied_places }}/{{ parking.capacity }}</span>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        {% widthratio parking.occupied_places parking.capacity 100 as percentage %}
+                        <div class="progress-bar {% if percentage >= '80' %}bg-danger{% elif percentage >= '50' %}bg-warning text-dark{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ percentage }}%;" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">{{ percentage }}%</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-p-square fs-1 d-block mb-2"></i>
+                    <p class="mb-0">No parking data available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Vehicles Table -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="card-title mb-0"><i class="bi bi-car-front-fill text-info me-2"></i>Recent Vehicles</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Plate Number</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in recent_vehicles %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ vehicle.plate_number }}</td>
+                                <td>{{ vehicle.get_vehicle_type_display }}</td>
+                                <td>
+                                    {% if vehicle.status == 'ACTIVE' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif vehicle.status == 'PARKED' %}
+                                        <span class="badge bg-secondary">Parked</span>
+                                    {% elif vehicle.status == 'CHARGING' %}
+                                        <span class="badge bg-info text-dark">Charging</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">{{ vehicle.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted">
+                                    <i class="bi bi-car-front fs-1 d-block mb-2"></i>
+                                    <p class="mb-0">No recent vehicles found.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% if recent_vehicles %}
+            <div class="card-footer bg-light text-center">
+                <a href="{% url 'vehicle-list' %}" class="text-decoration-none text-muted small">View all vehicles <i class="bi bi-arrow-right"></i></a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse data safely from Django context
+        const vehiclesLabels = JSON.parse('{{ vehicles_by_type_labels|safe }}');
+        const vehiclesData = JSON.parse('{{ vehicles_by_type_data|safe }}');
+        
+        const incidentsLabels = JSON.parse('{{ incidents_by_severity_labels|safe }}');
+        const incidentsData = JSON.parse('{{ incidents_by_severity_data|safe }}');
+
+        // Vehicles Pie Chart
+        const pieCtx = document.getElementById('vehiclesPieChart').getContext('2d');
+        new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: vehiclesLabels,
+                datasets: [{
+                    data: vehiclesData,
+                    backgroundColor: [
+                        '#0d6efd', // primary
+                        '#198754', // success
+                        '#ffc107', // warning
+                        '#dc3545', // danger
+                        '#0dcaf0', // info
+                        '#6c757d'  // secondary
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+
+        // Incidents Bar Chart
+        const barCtx = document.getElementById('incidentsBarChart').getContext('2d');
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: incidentsLabels,
+                datasets: [{
+                    label: 'Incidents Count',
+                    data: incidentsData,
+                    backgroundColor: [
+                        '#198754', // minor - success
+                        '#ffc107', // moderate - warning
+                        '#fd7e14', // severe - orange
+                        '#dc3545'  // critical - danger
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

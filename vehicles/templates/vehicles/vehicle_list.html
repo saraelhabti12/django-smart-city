@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Vehicles - Smart City Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h2 class="mb-0"><i class="bi bi-car-front-fill text-primary me-2"></i>Vehicles Management</h2>
+        <a href="{% url 'vehicle-create' %}" class="btn btn-primary shadow-sm"><i class="bi bi-plus-lg me-1"></i> Add Vehicle</a>
+    </div>
+</div>
+
+<!-- Filters Card -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label fw-bold text-secondary small mb-1">Search</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="search" name="search" placeholder="Plate or Destination..." value="{{ request.GET.search }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label for="type" class="form-label fw-bold text-secondary small mb-1">Type</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">All Types</option>
+                    {% for key, value in vehicle_types %}
+                        <option value="{{ key }}" {% if request.GET.type == key %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label fw-bold text-secondary small mb-1">Status</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">All Statuses</option>
+                    {% for key, value in vehicle_statuses %}
+                        <option value="{{ key }}" {% if request.GET.status == key %}selected{% endif %}>{{ value }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="road" class="form-label fw-bold text-secondary small mb-1">Road</label>
+                <select class="form-select" id="road" name="road">
+                    <option value="">All Roads</option>
+                    {% for road in roads %}
+                        <option value="{{ road.id }}" {% if request.GET.road == road.id|stringformat:"s" %}selected{% endif %}>{{ road.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="battery" class="form-label fw-bold text-secondary small mb-1">Battery Level</label>
+                <select class="form-select" id="battery" name="battery">
+                    <option value="">All Levels</option>
+                    <option value="low" {% if request.GET.battery == 'low' %}selected{% endif %}>Low (&lt; 20%)</option>
+                    <option value="medium" {% if request.GET.battery == 'medium' %}selected{% endif %}>Medium (20-50%)</option>
+                    <option value="high" {% if request.GET.battery == 'high' %}selected{% endif %}>High (&ge; 50%)</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100 shadow-sm" title="Apply Filters"><i class="bi bi-filter"></i></button>
+                <a href="{% url 'vehicle-list' %}" class="btn btn-light border ms-2 shadow-sm" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4 py-3">Plate Number</th>
+                        <th class="py-3">Type</th>
+                        <th class="py-3">Status</th>
+                        <th class="py-3">Speed</th>
+                        <th class="py-3">Battery Level</th>
+                        <th class="text-end pe-4 py-3">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ vehicle.plate_number }}</td>
+                        <td>
+                            {% if vehicle.vehicle_type == 'EMERGENCY' %}
+                                <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>{{ vehicle.get_vehicle_type_display }}</span>
+                            {% elif vehicle.vehicle_type == 'BUS' %}
+                                <span class="badge bg-info text-dark"><i class="bi bi-bus-front me-1"></i>{{ vehicle.get_vehicle_type_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ vehicle.get_vehicle_type_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if vehicle.status == 'ACTIVE' %}
+                                <span class="badge bg-success">Active</span>
+                            {% elif vehicle.status == 'PARKED' %}
+                                <span class="badge bg-secondary">Parked</span>
+                            {% elif vehicle.status == 'CHARGING' %}
+                                <span class="badge bg-warning text-dark">Charging</span>
+                            {% else %}
+                                <span class="badge bg-dark">{{ vehicle.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ vehicle.speed }} km/h</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                    <div class="progress-bar {% if vehicle.battery_level < 20 %}bg-danger{% elif vehicle.battery_level < 50 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ vehicle.battery_level|stringformat:'f' }}%;" aria-valuenow="{{ vehicle.battery_level|stringformat:'f' }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted" style="min-width: 35px;">{{ vehicle.battery_level }}%</small>
+                            </div>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'vehicle-detail' vehicle.pk %}" class="btn btn-sm btn-light border" title="View"><i class="bi bi-eye text-primary"></i></a>
+                            <a href="{% url 'vehicle-update' vehicle.pk %}" class="btn btn-sm btn-light border mx-1" title="Edit"><i class="bi bi-pencil text-warning"></i></a>
+                            <a href="{% url 'vehicle-delete' vehicle.pk %}" class="btn btn-sm btn-light border" title="Delete"><i class="bi bi-trash text-danger"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            <h5 class="fw-normal">No vehicles found in the system.</h5>
+                            <p class="mb-0">Click the 'Add Vehicle' button above to register a new one.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
