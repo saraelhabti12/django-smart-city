@@ -67,3 +67,4 @@ _Placeholder for screenshots of the application's various modules and dashboard.
 
 ## Author
 [Your Name/Organization Here]
+# django-smart-city
